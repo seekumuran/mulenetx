@@ -9,6 +9,7 @@ pub mod insider_chart;
 pub mod news;
 pub mod news_marks;
 pub mod omega;
+pub mod omega_data;
 pub mod portfolio;
 pub mod prompt;
 pub mod rail;

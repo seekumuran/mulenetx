@@ -83,6 +83,8 @@ struct Args {
 }
 
 fn main() -> Result<()> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
     let args = Args::parse();
     let (cfg, cfg_state, config_path) = config::load_at(args.config.as_deref());
     // Validation warnings go to stderr before the TUI takes the terminal,

@@ -107,12 +107,7 @@ pub fn render_price_chart(f: &mut Frame, area: Rect, app: &App) {
 
 /// Render a price-only chart for a specific ticker, independent of the
 /// globally selected watchlist symbol. Used by the four-chart MARKET view.
-pub fn render_price_chart_for_symbol(
-    f: &mut Frame,
-    area: Rect,
-    app: &App,
-    symbol: &str,
-) {
+pub fn render_price_chart_for_symbol(f: &mut Frame, area: Rect, app: &App, symbol: &str) {
     render_chart_with(f, area, app, symbol, false, false);
 }
 

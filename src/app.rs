@@ -348,6 +348,8 @@ pub struct App {
     /// actions, and it fades.
     pub notice: Option<(String, Instant)>,
     pub selected: usize,
+    pub omega_risk_scroll: usize,
+    pub omega_flow_scroll: usize,
     pub view_idx: usize,
     pub source_name: &'static str,
     /// How stale the active source's prices are (`DataSource::delay_note`),
@@ -530,6 +532,8 @@ impl App {
             fallback_exhausted: false,
             notice: None,
             selected: 0,
+            omega_risk_scroll: 0,
+            omega_flow_scroll: 0,
             view_idx: init.ui.view_idx,
             source_name: init.source_name,
             source_delay,
@@ -961,8 +965,14 @@ impl App {
             Action::Refresh => self.manual_refresh(),
             Action::Up if calendar_view => self.move_calendar(-1),
             Action::Down if calendar_view => self.move_calendar(1),
-            Action::PageUp if calendar_view => self.move_calendar(-10),
-            Action::PageDown if calendar_view => self.move_calendar(10),
+            Action::PageUp if self.view_id() == ui::ViewId::Split => {
+                self.omega_risk_scroll = self.omega_risk_scroll.saturating_sub(10);
+                self.omega_flow_scroll = self.omega_flow_scroll.saturating_sub(10);
+            }
+            Action::PageDown if self.view_id() == ui::ViewId::Split => {
+                self.omega_risk_scroll = self.omega_risk_scroll.saturating_add(10);
+                self.omega_flow_scroll = self.omega_flow_scroll.saturating_add(10);
+            }
             Action::Open if calendar_view => self.open_calendar_row(),
             // News/Insider: up/down scroll articles, left/right switch ticker.
             Action::Up if news_view => {

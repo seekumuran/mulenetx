@@ -306,8 +306,12 @@ fn graph_panel(f: &mut Frame, area: Rect, data: &EngineData) {
     for (i, id) in ids.iter().enumerate() {
         let angle = -std::f64::consts::FRAC_PI_2
             + std::f64::consts::TAU * i as f64 / ids.len().max(1) as f64;
-        let x = (cx + rx * angle.cos()).round().clamp(1.0, (width - 2) as f64) as usize;
-        let y = (cy + ry * angle.sin()).round().clamp(1.0, (height - 2) as f64) as usize;
+        let x = (cx + rx * angle.cos())
+            .round()
+            .clamp(1.0, (width - 2) as f64) as usize;
+        let y = (cy + ry * angle.sin())
+            .round()
+            .clamp(1.0, (height - 2) as f64) as usize;
         positions.insert(id.clone(), (x, y));
     }
 
@@ -322,17 +326,21 @@ fn graph_panel(f: &mut Frame, area: Rect, data: &EngineData) {
             continue;
         }
         let flagged = !rel.alerts.trim().is_empty() && rel.alerts != "-";
-        let color = if flagged { RED } else { Color::Rgb(55, 105, 125) };
+        let color = if flagged {
+            RED
+        } else {
+            Color::Rgb(55, 105, 125)
+        };
         draw_edge(&mut grid, x0, y0, x1, y1, color);
     }
 
     // Draw nodes on top of the edges. Use actual engine entity IDs and risk.
     for id in &ids {
-        let Some(&(x, y)) = positions.get(id) else { continue };
+        let Some(&(x, y)) = positions.get(id) else {
+            continue;
+        };
         let entity = data.entities.iter().find(|e| e.id == *id);
-        let color = entity
-            .map(|e| severity_color(&e.severity))
-            .unwrap_or(CYAN);
+        let color = entity.map(|e| severity_color(&e.severity)).unwrap_or(CYAN);
         let label = format!("{}", id.chars().take(7).collect::<String>());
         let label = format!("[{}]", label);
         let start = x.saturating_sub(label.chars().count() / 2);
@@ -365,10 +373,19 @@ fn graph_panel(f: &mut Frame, area: Rect, data: &EngineData) {
     f.render_widget(Paragraph::new(lines).style(Style::default().bg(BG)), inner);
 }
 
-fn draw_edge(grid: &mut [Vec<(char, Color)>], x0: usize, y0: usize, x1: usize, y1: usize, color: Color) {
+fn draw_edge(
+    grid: &mut [Vec<(char, Color)>],
+    x0: usize,
+    y0: usize,
+    x1: usize,
+    y1: usize,
+    color: Color,
+) {
     let width = grid.first().map_or(0, |row| row.len()) as isize;
     let height = grid.len() as isize;
-    if width == 0 || height == 0 { return; }
+    if width == 0 || height == 0 {
+        return;
+    }
 
     let (mut x, mut y) = (x0 as isize, y0 as isize);
     let (tx, ty) = (x1 as isize, y1 as isize);
@@ -380,16 +397,29 @@ fn draw_edge(grid: &mut [Vec<(char, Color)>], x0: usize, y0: usize, x1: usize, y
 
     loop {
         if x >= 0 && x < width && y >= 0 && y < height {
-            let ch = if dx.abs() > (-dy).abs() * 2 { '─' }
-                else if (-dy).abs() > dx.abs() * 2 { '│' }
-                else if (tx - x0 as isize) * (ty - y0 as isize) >= 0 { '╲' }
-                else { '╱' };
+            let ch = if dx.abs() > (-dy).abs() * 2 {
+                '─'
+            } else if (-dy).abs() > dx.abs() * 2 {
+                '│'
+            } else if (tx - x0 as isize) * (ty - y0 as isize) >= 0 {
+                '╲'
+            } else {
+                '╱'
+            };
             grid[y as usize][x as usize] = (ch, color);
         }
-        if x == tx && y == ty { break; }
+        if x == tx && y == ty {
+            break;
+        }
         let e2 = 2 * err;
-        if e2 >= dy { err += dy; x += sx; }
-        if e2 <= dx { err += dx; y += sy; }
+        if e2 >= dy {
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y += sy;
+        }
     }
 }
 
