@@ -27,11 +27,3 @@ Install Rust and Cargo, then run:
 cargo check
 cargo run --release
 ```
-
-## Attribution
-
-MULENETX is based on an existing open-source terminal application. See the project licence and attribution notices for details.
-
-## Status
-
-Under development.
