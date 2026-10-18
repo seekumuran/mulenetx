@@ -1,127 +1,160 @@
-# MULENETX
+# MULENETX-OMEGA
 
-**A Terminal-Based Market Intelligence Dashboard**
+### Graph-Native Financial Crime Intelligence Terminal
 
-MULENETX is a Rust-based terminal user interface (TUI) for exploring market data through a compact, multi-panel dashboard. It combines market charts and a watchlist in a keyboard-oriented interface designed for developers who prefer working directly in the terminal.
+MULENETX-OMEGA is a Rust-based terminal workstation for exploring synthetic financial-market data, account risk signals, transaction flows, and connected entities through a dense, Bloomberg-inspired TUI.
+
+The project explores how graph-oriented intelligence and transaction-pattern analysis can be presented in a lightweight, interactive terminal interface.
+
+**Status:** Active development  
+**Language:** Rust  
+**Interface:** Terminal UI (TUI)
+
+---
 
 ## Features
 
-- **Multi-panel market dashboard** — view multiple market symbols simultaneously.
-- **Price charts** — separate chart panels for AAPL, MSFT, NVDA, and BTC-USD.
-- **Watchlist** — keep market symbols visible alongside the charts.
-- **Terminal-native interface** — a focused, keyboard-driven experience built with Rust.
-- **Release builds** — compile an optimized executable locally using Cargo.
+- **Market workspace** — stacked candlestick charts and a multi-symbol watchlist.
+- **Risk watch** — synthetic account records with risk scores, signal labels, clusters, and exposure values.
+- **Transaction trace** — linked account-to-account transactions with timestamps, pattern labels, and transfer amounts.
+- **Ticker-linked intelligence** — inspect account and transaction data associated with a selected market symbol.
+- **Keyboard-driven navigation** — switch symbols, navigate workspaces, and inspect tabular data.
+- **Deterministic synthetic network** — generated account and transaction data for repeatable demonstrations without requiring a live financial-data backend.
+
+### Supported symbols
+
+`AAPL` · `MSFT` · `NVDA` · `AMZN` · `GOOGL` · `META` · `TSLA` · `AVGO` · `ORCL` · `AMD`
+
+---
 
 ## Preview
 
-The dashboard currently displays four chart panels:
+The terminal workspace combines two market charts on the left, account-risk and transaction-intelligence panels on the right, and a watchlist along the bottom.
 
-| Panel | Symbol |
-|---|---|
-| Top-left | AAPL |
-| Top-right | MSFT |
-| Bottom-left | NVDA |
-| Bottom-right | BTC-USD |
+> Add a screenshot of the running terminal here.
 
-A watchlist is displayed beneath the charts.
+---
 
-## Requirements
+## Getting Started
 
-- [Rust](https://www.rust-lang.org/tools/install) and Cargo
+### Requirements
+
 - Git
-- A terminal that supports the interface's layout and rendering
+- A Rust toolchain installed through [rustup](https://rustup.rs/)
+- Cargo, included with Rust
+- A terminal emulator that supports interactive terminal applications
 
-## Installation
-
-Clone the repository:
+### Clone the repository
 
 ```bash
 git clone https://github.com/seekumuran/mulenetx.git
 cd mulenetx
 ```
 
-Build the project in release mode:
-
-```bash
-cargo build --release
-```
-
-Run the application:
-
-```bash
-cargo run --release
-```
-
-On Windows, the compiled executable is normally located at:
-
-```text
-target/release/mulenetx.exe
-```
-
-On Linux and macOS, the executable is normally located at:
-
-```text
-target/release/mulenetx
-```
-
-## Development
-
-Check the project:
+### Verify the source
 
 ```bash
 cargo check
 ```
 
-Build a debug version:
+### Format the code
 
 ```bash
-cargo build
+cargo fmt --check
 ```
 
-Build an optimized release:
+To apply standard Rust formatting:
+
+```bash
+cargo fmt
+```
+
+### Run the application
+
+```bash
+cargo run
+```
+
+For an optimized build:
 
 ```bash
 cargo build --release
 ```
 
-## Project Structure
+The executable will be generated under `target/release/` for your platform.
 
-```text
-mulenetx/
-├── Cargo.toml
-├── Cargo.lock
-├── README.md
-└── src/
-    ├── app.rs
-    └── ui/
-        ├── chart.rs
-        ├── mod.rs
-        ├── split.rs
-        └── omega.rs
-```
-
-This is a simplified overview; the repository contains additional source files and modules.
-
-## Technology Stack
-
-- **Rust** — application implementation
-- **Ratatui** — terminal user interface
-- **Cargo** — dependency management and builds
-- **Reqwest** — HTTP client functionality
-
-## Attribution
-
-MULENETX is derived from the open-source **AlphaAI-TUI** project.
-
-Original upstream repository:  
-https://github.com/makeev/alphai-tui
-
-The original project's license and applicable attribution requirements are retained. See the repository's license file for the applicable terms.
-
-## License
-
-See [`LICENSE`](LICENSE) for licensing terms. MULENETX remains subject to the original project's license obligations and any applicable third-party dependency licenses.
+**Windows note:** Some managed Windows environments enforce application-control policies that block locally built executables. If compilation succeeds but execution is blocked, consult the relevant Windows security logs or your administrator.
 
 ---
 
-**MULENETX** — market data, charts, and terminal workflows.
+## Navigation
+
+The exact key bindings may depend on the active workspace and repository configuration.
+
+| Key | Action |
+|---|---|
+| `q` | Quit |
+| `Tab` / `1–9` | Switch views |
+| `↑` / `↓` | Select ticker |
+| `/` | Find ticker |
+| `t` | Change chart interval |
+| `r` | Refresh |
+| `s` | Settings |
+| `?` | Help |
+| `PageUp` / `PageDown` | Scroll data, where supported |
+
+Use the in-application help for the current key-binding list.
+
+---
+
+## Synthetic Data and Interpretation
+
+This repository's intelligence workspace uses generated demonstration data.
+
+- Account identifiers, exposures, risk scores, and transaction records are synthetic.
+- Signal labels such as `CIRCULAR`, `VELOCITY`, and `CROSS-CLUSTER` represent demo pattern classifications.
+- Market symbols are used to organize the demonstration workspace; displayed intelligence is not evidence of wrongdoing by any real company or individual.
+- Synthetic risk scores are not calibrated probabilities of fraud.
+- The project is a research and engineering prototype, not a production anti-money-laundering system.
+
+Do not use demonstration outputs to make real financial, compliance, or law-enforcement decisions.
+
+---
+
+## Technology
+
+- **Rust** — application logic and data processing
+- **Ratatui** — terminal interface and tabular presentation
+- **Crossterm** — terminal interaction
+- **Cargo** — dependency management and builds
+
+See `Cargo.toml` for the project's dependency declarations.
+
+---
+
+## Development
+
+Check compilation before submitting changes:
+
+```bash
+cargo check
+cargo fmt --check
+```
+
+Run the application locally:
+
+```bash
+cargo run
+```
+
+Contributions, reproducible bug reports, and suggestions for improving the terminal interface and synthetic graph-intelligence demonstrations are welcome.
+
+---
+
+## License and Attribution
+
+See the repository's `LICENSE` file for the applicable license and reuse conditions. This project originated from an existing Rust TUI codebase; retain applicable upstream notices and attribution when redistributing or modifying inherited components.
+
+---
+
+**Repository:** [github.com/seekumuran/mulenetx](https://github.com/seekumuran/mulenetx)
