@@ -95,18 +95,36 @@ fn panel_split(height: u16, volume: bool, rsi: bool) -> (u16, u16) {
 /// (`m`, simple or exponential by `e`), a volume panel (`b`) and an RSI(14)
 /// panel (`i`). Shared by ChartView and SplitView.
 pub fn render_chart(f: &mut Frame, area: Rect, app: &App) {
-    render_chart_with(f, area, app, app.show_volume, app.show_rsi);
-}
-
-/// The price panel alone, for the News chart layout: it shares the screen
-/// with the list and the card, and the keys that toggle the lower panels
-/// do not reach it there, so it keeps every row for the candles.
-pub fn render_price_chart(f: &mut Frame, area: Rect, app: &App) {
-    render_chart_with(f, area, app, false, false);
-}
-
-fn render_chart_with(f: &mut Frame, area: Rect, app: &App, show_volume: bool, show_rsi: bool) {
     let symbol = app.selected_symbol().to_string();
+    render_chart_with(f, area, app, &symbol, app.show_volume, app.show_rsi);
+}
+
+/// The price panel alone, for layouts that need the full area for candles.
+pub fn render_price_chart(f: &mut Frame, area: Rect, app: &App) {
+    let symbol = app.selected_symbol().to_string();
+    render_chart_with(f, area, app, &symbol, false, false);
+}
+
+/// Render a price-only chart for a specific ticker, independent of the
+/// globally selected watchlist symbol. Used by the four-chart MARKET view.
+pub fn render_price_chart_for_symbol(
+    f: &mut Frame,
+    area: Rect,
+    app: &App,
+    symbol: &str,
+) {
+    render_chart_with(f, area, app, symbol, false, false);
+}
+
+fn render_chart_with(
+    f: &mut Frame,
+    area: Rect,
+    app: &App,
+    symbol: &str,
+    show_volume: bool,
+    show_rsi: bool,
+) {
+    let symbol = symbol.to_string();
 
     let Some(data) = app.data.get(&symbol) else {
         let msg = match app.errors.get(&symbol) {

@@ -8,6 +8,7 @@ pub mod insider;
 pub mod insider_chart;
 pub mod news;
 pub mod news_marks;
+pub mod omega;
 pub mod portfolio;
 pub mod prompt;
 pub mod rail;
@@ -33,6 +34,7 @@ use crate::keymap::Action;
 /// tab order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ViewId {
+    Omega,
     Split,
     News,
     Table,
@@ -75,7 +77,7 @@ impl Hint {
 /// default; Table uses it as is).
 pub static DEFAULT_HINTS: &[Hint] = &[
     Hint::act(&[Action::Quit], "quit"),
-    Hint::fixed("tab/1-9", "view"),
+    Hint::fixed("tab/1-2", "view"),
     Hint::act(&[Action::Up, Action::Down], "select"),
     Hint::act(&[Action::AddTicker], "add"),
     Hint::act(&[Action::FindTicker], "find"),
@@ -86,44 +88,32 @@ pub static DEFAULT_HINTS: &[Hint] = &[
 ];
 
 /// A display mode. Views are stateless renderers: all mutable state
-/// (selection, scroll) lives in `App`, so adding a view is a unit struct, a
-/// `ViewId` variant and one entry in `VIEWS`. The capability methods drive
-/// key handling and the demand-driven AlphAI fetch centrally in `App`: a
-/// view declares what it shows and never fetches anything itself.
+/// (selection, scroll) lives in `App`, so adding a view is a unit struct,
+/// a ViewId variant and one entry in VIEWS.
 pub trait View: Sync {
     fn id(&self) -> ViewId;
     fn title(&self) -> &'static str;
 
-    /// Footer hints while this view is active; keys render from the keymap.
     fn hints(&self) -> &'static [Hint] {
         DEFAULT_HINTS
     }
 
-    /// The AlphAI feed to keep fresh while this view is visible (drives
-    /// the demand-driven fetch, TTL refresh and the r retry). The
-    /// request-budget guards stay in `App`.
     fn feed_shown(&self) -> Option<FeedKind> {
         None
     }
 
-    /// True when ↑↓/jk drive the article list (with j paging the feed at
-    /// the last row) instead of the watchlist selection.
     fn navigates_articles(&self) -> bool {
         false
     }
 
-    /// True when the chart option keys (c, m, i) apply.
     fn has_chart_panel(&self) -> bool {
         false
     }
 
-    /// True when this view shows the selected ticker's earnings read, which
-    /// is fetched per ticker on its own long TTL rather than as a feed.
     fn shows_earnings(&self) -> bool {
         false
     }
 
-    /// The watchlist agenda and its paced report-date sweep.
     fn shows_calendar(&self) -> bool {
         false
     }
@@ -131,25 +121,21 @@ pub trait View: Sync {
     fn render(&self, f: &mut Frame, area: Rect, app: &mut App);
 }
 
-/// Register new display modes here. Order defines the tab cycle and the
-/// 1..9 hotkeys.
-pub static VIEWS: [&dyn View; 9] = [
+/// Internal registry: keep all original views registered.
+pub static VIEWS: [&dyn View; 10] = [
     &split::SplitView,
     &news::NewsView,
     &table::TableView,
     &chart::ChartView,
     &insider::InsiderView,
     &earnings::EarningsView,
-    // Appended rather than slotted next to Table: the array order is the
-    // tab cycle and the 1-9 hotkeys, so inserting one would renumber every
-    // view behind it and break the muscle memory of anyone using them.
     &summary::SummaryView,
     &portfolio::PortfolioView,
     &calendar::CalendarView,
+    &omega::OmegaView,
 ];
 
-/// Index of a view in `VIEWS`. Every `ViewId` is registered exactly once
-/// (the tests enforce it), so this is total.
+/// Index of a view in VIEWS.
 pub fn view_index(id: ViewId) -> usize {
     VIEWS
         .iter()
@@ -158,18 +144,11 @@ pub fn view_index(id: ViewId) -> usize {
 }
 
 pub fn draw(f: &mut Frame, app: &mut App) {
-    // Before rows are built, so the hovered row renders without its unseen
-    // marker on this very frame.
     app.mark_selected_seen();
-    // The quote rail takes a row from the body in every view, so the
-    // selected price is on screen even where the view itself has no room
-    // for one (News, Insider, Earnings). Off via `[ui] quote_rail`, and
-    // dropped on a terminal too short to spare the row.
+
     let rail_h = u16::from(rail::visible(app, f.area().height));
-    // Bare mode (z) hands the header's and footer's rows to the view: in a
-    // tmux pane the window name and the key hints are chrome the pane can
-    // spare, while the rail keeps the ticker and its price on screen.
     let chrome_h = u16::from(!app.bare);
+
     let [header, rail_area, body, footer] = Layout::vertical([
         Constraint::Length(chrome_h),
         Constraint::Length(rail_h),
@@ -184,8 +163,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if rail_h > 0 {
         rail::render(f, rail_area, app);
     }
+
     app.article_overlay.inline = false;
     VIEWS[app.view_idx].render(f, body, app);
+
     if chrome_h > 0 {
         f.render_widget(footer_line(app), footer);
     }
@@ -209,14 +190,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 }
 
-/// Cut to display cells, preserving grapheme clusters (wide characters,
-/// combining accents and joined emoji). Zero still means no known limit.
+/// Cut to display cells, preserving grapheme clusters.
 pub(crate) fn ellipsize(text: &str, width: usize) -> String {
     if width == 0 || text.width() <= width {
         return text.to_string();
     }
+
     let mut out = String::new();
     let mut used = 0;
+
     for grapheme in text.graphemes(true) {
         let cells = grapheme.width();
         if used + cells > width - 1 {
@@ -225,6 +207,7 @@ pub(crate) fn ellipsize(text: &str, width: usize) -> String {
         out.push_str(grapheme);
         used += cells;
     }
+
     out.push('…');
     out
 }
@@ -238,6 +221,7 @@ pub(crate) fn pad_right(text: &str, width: usize) -> String {
 pub(crate) fn centered(r: Rect, width: u16, height: u16) -> Rect {
     let w = width.min(r.width.saturating_sub(2));
     let h = height.min(r.height.saturating_sub(2));
+
     Rect {
         x: r.x + (r.width.saturating_sub(w)) / 2,
         y: r.y + (r.height.saturating_sub(h)) / 2,
@@ -246,62 +230,57 @@ pub(crate) fn centered(r: Rect, width: u16, height: u16) -> Rect {
     }
 }
 
+/// Display only the two requested tabs.
 fn header_line(app: &App, width: u16) -> Paragraph<'static> {
     let mut spans = vec![Span::styled(
-        " alphai-tui ",
+        " MULENETX OMEGA ",
         Style::new().bold().fg(app.theme.accent),
     )];
+
+    let visible_views = [(0usize, "MARKET")];
+
     let source = format!(" · {} {}", app.source_name, app.refresh_marker());
     let key_state = if app.alphai_enabled {
         " · alphai ✓"
     } else {
         " · alphai: no key (s)"
     };
-    let status_room = spans.iter().map(Span::width).sum::<usize>()
-        + Span::raw(&source).width()
-        + Span::raw(key_state).width();
-    // The header is navigation and connection context. Quote timestamps
-    // belong to their prices; chart controls belong to the chart.
-    let named: usize = VIEWS.iter().map(|v| v.title().len() + 4).sum();
-    let compact = named + status_room > width as usize;
-    for (i, view) in VIEWS.iter().enumerate() {
-        let active = i == app.view_idx;
+
+    for (tab, (index, title)) in visible_views.iter().enumerate() {
+        let active = app.view_idx == *index;
         let style = if active {
             Style::new().fg(app.theme.accent_text).bg(app.theme.accent)
         } else {
             app.theme.subtle()
         };
-        let label = if compact && !active {
-            if width < 80 {
-                format!(" {}", i + 1)
-            } else {
-                format!(" {} ", i + 1)
-            }
-        } else {
-            format!(" {}:{} ", i + 1, view.title())
-        };
-        spans.push(Span::styled(label, style));
+
+        spans.push(Span::styled(format!(" {}:{} ", tab + 1, title), style));
     }
+
     let used = spans.iter().map(Span::width).sum::<usize>();
-    let status = if used + Span::raw(format!("{source}{key_state}")).width() <= width as usize {
-        format!("{source}{key_state}")
+    let full_status = format!("{source}{key_state}");
+
+    let status = if used + Span::raw(&full_status).width() <= width as usize {
+        full_status
     } else {
         source
     };
-    let status_w = Span::raw(&status).width();
-    if used + status_w <= width as usize {
-        spans.push(Span::raw(" ".repeat(width as usize - used - status_w)));
+
+    let used = spans.iter().map(Span::width).sum::<usize>();
+    let status_width = Span::raw(&status).width();
+
+    if used + status_width <= width as usize {
+        spans.push(Span::raw(" ".repeat(width as usize - used - status_width)));
         spans.push(Span::styled(status, app.theme.subtle()));
     }
+
     Paragraph::new(Line::from(spans))
 }
 
 #[cfg(test)]
 mod tests;
 
-/// The current view's hints with their live keys. Split out of
-/// `footer_line` so a test can measure it: the whole line has to fit the
-/// 110-column terminal the README promises.
+/// The current view's hints with their live keys.
 fn hints_text(app: &App) -> String {
     let parts: Vec<String> = VIEWS[app.view_idx]
         .hints()
@@ -315,6 +294,7 @@ fn hints_text(app: &App) -> String {
             format!("{keys} {}", h.label)
         })
         .collect();
+
     format!(" {}", parts.join(" · "))
 }
 
@@ -329,7 +309,6 @@ fn footer_line(app: &App) -> Paragraph<'static> {
     } else if app.ticker_search.open {
         " type to find · ↑↓ move · enter select · esc cancel".to_string()
     } else if app.settings.open {
-        // The settings form is a text input; its keys are not remappable.
         " ↑↓ move · ←→ change · enter edit/save · esc close".to_string()
     } else if app.article_overlay.open {
         " ↑↓/jk scroll · pgup/pgdn page · ⏎ open in browser · esc/v close".to_string()
@@ -340,12 +319,9 @@ fn footer_line(app: &App) -> Paragraph<'static> {
     } else {
         hints_text(app)
     };
+
     let mut spans = vec![Span::styled(hints, app.theme.subtle())];
-    // What the app did on its own outranks what a source is complaining
-    // about: after a fallback the errors are gone anyway, and the notice is
-    // the only place the swap is explained. It goes in front of the hints
-    // for its minute, since behind them it started past column 95 and a
-    // common terminal cut it off.
+
     if let Some(notice) = app.notice() {
         spans.insert(
             0,
@@ -363,5 +339,6 @@ fn footer_line(app: &App) -> Paragraph<'static> {
                 .add_modifier(Modifier::BOLD),
         ));
     }
+
     Paragraph::new(Line::from(spans))
 }

@@ -1,14 +1,11 @@
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 
 use crate::app::{App, FeedKind};
 use crate::keymap::Action;
 use crate::ui::{Hint, View, ViewId};
-use crate::ui::{chart, news, table};
-
-/// Below this body height the news strip is dropped and the table and the
-/// chart share the row, so both keep usable space on tiny terminals.
-const NEWS_MIN_BODY_HEIGHT: u16 = 16;
+use crate::ui::{chart, table};
 
 pub struct SplitView;
 
@@ -18,13 +15,13 @@ impl View for SplitView {
     }
 
     fn title(&self) -> &'static str {
-        "Split"
+        "MARKET"
     }
 
     fn hints(&self) -> &'static [Hint] {
         const HINTS: &[Hint] = &[
             Hint::act(&[Action::Quit], "quit"),
-            Hint::fixed("tab/1-9", "view"),
+            Hint::fixed("tab", "view"),
             Hint::act(&[Action::Up, Action::Down], "select"),
             Hint::act(&[Action::CycleScope], "scope"),
             Hint::act(
@@ -40,42 +37,66 @@ impl View for SplitView {
             ),
             Hint::act(&[Action::NextPreset], "interval"),
             Hint::act(&[Action::FindTicker], "find"),
-            // No settings hint: with the news marks key this line is the
-            // widest in the app after the News one, it has to fit 110
-            // columns, and the help overlay lists s anyway.
             Hint::act(&[Action::Help], "help"),
         ];
         HINTS
     }
 
-    /// The embedded news strip drives the same demand-driven fetch as the
-    /// full News view; jk still navigate the watchlist, not the strip.
     fn feed_shown(&self) -> Option<FeedKind> {
-        Some(FeedKind::News)
+        None
     }
 
     fn has_chart_panel(&self) -> bool {
         true
     }
 
-    /// The full-width chart gets 70% of the height, with the watchlist
-    /// and news strip sharing the remaining 30% below it.
     fn render(&self, f: &mut Frame, area: Rect, app: &mut App) {
-        if area.height < NEWS_MIN_BODY_HEIGHT {
+        if area.height < 18 || area.width < 70 {
             let [left, right] =
-                Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)])
-                    .areas(area);
+                Layout::horizontal([
+                    Constraint::Percentage(40),
+                    Constraint::Percentage(60),
+                ])
+                .areas(area);
+
             table::render_table(f, left, app);
-            chart::render_chart(f, right, app);
+            chart::render_price_chart(f, right, app);
             return;
         }
-        let [top, bottom] =
-            Layout::vertical([Constraint::Percentage(70), Constraint::Percentage(30)]).areas(area);
-        chart::render_chart(f, top, app);
-        let [left, right] =
-            Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)])
-                .areas(bottom);
-        table::render_table(f, left, app);
-        news::render_panel(f, right, app);
+
+        let [charts_area, watchlist_area] =
+            Layout::vertical([
+                Constraint::Percentage(90),
+                Constraint::Percentage(10),
+            ])
+            .areas(area);
+
+        let [top_row, bottom_row] =
+            Layout::vertical([
+                Constraint::Percentage(50),
+                Constraint::Percentage(50),
+            ])
+            .areas(charts_area);
+
+        let [chart_1, chart_2] =
+            Layout::horizontal([
+                Constraint::Percentage(50),
+                Constraint::Percentage(50),
+            ])
+            .areas(top_row);
+
+        let [chart_3, chart_4] =
+            Layout::horizontal([
+                Constraint::Percentage(50),
+                Constraint::Percentage(50),
+            ])
+            .areas(bottom_row);
+
+        chart::render_price_chart_for_symbol(f, chart_1, app, "AAPL");
+        chart::render_price_chart_for_symbol(f, chart_2, app, "MSFT");
+        chart::render_price_chart_for_symbol(f, chart_3, app, "NVDA");
+        chart::render_price_chart_for_symbol(f, chart_4, app, "BTC-USD");
+
+        table::render_table(f, watchlist_area, app);
     }
 }

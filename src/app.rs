@@ -919,9 +919,10 @@ impl App {
             return true;
         }
         if let KeyCode::Char(c @ '1'..='9') = key.code {
-            let idx = c as usize - '1' as usize;
-            if idx < ui::VIEWS.len() {
-                self.switch_view(idx);
+            match c {
+                '1' => self.switch_view(0),
+                '2' => self.switch_view(9),
+                _ => {}
             }
             return false;
         }
@@ -947,9 +948,8 @@ impl App {
             Action::RemoveTicker => self.remove_selected_symbol(),
             Action::Position => self.open_position_prompt(),
             Action::FindTicker => self.open_ticker_search(),
-            Action::NextView => self.switch_view((self.view_idx + 1) % ui::VIEWS.len()),
-            Action::PrevView => {
-                self.switch_view((self.view_idx + ui::VIEWS.len() - 1) % ui::VIEWS.len())
+            Action::NextView | Action::PrevView => {
+                self.switch_view(if self.view_idx == 0 { 9 } else { 0 });
             }
             Action::Settings => self.open_settings(),
             Action::Help => {
